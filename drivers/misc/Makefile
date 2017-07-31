@@ -58,11 +58,44 @@ obj-$(CONFIG_PVPANIC)   	+= pvpanic.o
 obj-$(CONFIG_HABANA_AI)		+= habanalabs/
 obj-$(CONFIG_XILINX_SDFEC)	+= xilinx_sdfec.o
 obj-$(CONFIG_UID_SYS_STATS)	+= uid_sys_stats.o
-obj-$(CONFIG_SPRD_UID)		+= misc_sprd_uid.o
-misc_sprd_uid-y		:= sprd_uid.o
-obj-$(CONFIG_HISI_HIKEY_USB)	+= hisi_hikey_usb.o
-obj-$(CONFIG_SPRD_SOCID)	+= sprd_soc_id.o
-obj-$(CONFIG_LEDS_SC27XX_VIBRA)	+= vibrator/
-obj-$(CONFIG_HQ_HARDWARE_INFO)	+= hqhardwareinfo/
-obj-$(CONFIG_OPLUS_DEVICE_IFNO)	+= device_info/
-obj-$(CONFIG_OP_RF_CABLE_MONITOR)	+= op_rf_cable_monitor.o
+obj-$(CONFIG_MEMORY_STATE_TIME)	+= memory_state_time.o
+obj-$(CONFIG_QPNP_MISC)		+= qpnp-misc.o
+
+obj-$(CONFIG_OKL4_USER_VIRQ)	+= okl4-virq.o
+obj-$(CONFIG_OKL4_RINGBUF)	+= okl4-ringbuf.o
+obj-$(CONFIG_TEST_IRQ_REQUESTER) += irq_requester.o
+
+obj-$(CONFIG_OKL4_USER_VIPC)    += okl4-vipc.o
+obj-$(CONFIG_OKL4_GUEST)        += okl4-panic.o
+obj-$(CONFIG_OKL4_LINK_SHBUF)    += okl4-link-shbuf.o
+obj-$(CONFIG_WIGIG_SENSING_SPI)	+= wigig_sensing.o
+obj-$(CONFIG_QTI_MAXIM_FAN_CONTROLLER) += max31760.o
+obj-$(CONFIG_QTI_XR_SMRTVWR_MISC) += qxr-stdalonevwr.o
+
+# ifdef OPLUS_FEATURE_TP_BASIC
+obj-$(CONFIG_CS_F61_NDT) 	+= cs_press/
+# endif /* OPLUS_FEATURE_TP_BASIC */
+
+#ifdef OPLUS_FEATURE_TP_BASIC
+obj-$(CONFIG_COLOR_CTRL) 	+= colorctrl/
+obj-$(CONFIG_COLOR_CTRL_V2) 	+= colorctrl_v2/
+#endif /* OPLUS_FEATURE_TP_BASIC */
+
+obj-$(CONFIG_AW8697_HAPTIC)     += aw8697_haptic/
+
+obj-$(CONFIG_FPR_FPC)		+= fpr_FingerprintCard/
+
+#ifdef OPLUS_FEATURE_RF_CABLE_DETECT
+obj-$(CONFIG_OPLUS_RF_CABLE_MONITOR)	+= oplus_rf_cable_monitor.o
+obj-$(CONFIG_OPLUS_RF_CABLE_MONITOR) += op_ant_detect.o
+#endif /* OPLUS_FEATURE_RF_CABLE_DETECT */
+
+#ifdef OPLUS_FEATURE_SIM_DETECT
+obj-$(CONFIG_SIM_DETECT)	+= sim_detect.o
+#endif
+
+#ifdef OPLUS_FEATURE_SIM_DETECT
+obj-$(CONFIG_OEM_QMI)	+= oem_qmi_client.o
+#endif
+
+obj-$(CONFIG_FORCE_FAST_CHARGE) += fastchg.o
