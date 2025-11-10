@@ -24,6 +24,9 @@
 #include <linux/parser.h>
 #include <linux/fsnotify.h>
 #include <linux/seq_file.h>
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
+#include <linux/susfs_def.h>
+#endif
 
 #define DEVPTS_DEFAULT_MODE 0600
 /*
@@ -34,6 +37,18 @@
  */
 #define DEVPTS_DEFAULT_PTMX_MODE 0000
 #define PTMX_MINOR	2
+
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
+extern int __ksu_handle_devpts(struct inode *inode);
+
+#ifndef ksu_handle_devpts
+int ksu_handle_devpts(struct inode *inode)
+{
+    return __ksu_handle_devpts(inode);
+}
+EXPORT_SYMBOL(ksu_handle_devpts);
+#endif /* ksu_handle_devpts */
+#endif /* CONFIG_KSU_SUSFS_SUS_SU */
 
 /*
  * sysctl support for setting limits on the number of Unix98 ptys allocated.
@@ -596,6 +611,11 @@ struct dentry *devpts_pty_new(struct pts_fs_info *fsi, int index, void *priv)
 	return dentry;
 }
 
+#if defined(CONFIG_KSU_SUSFS_SUS_SU)
+extern bool ksu_devpts_hook;
+extern int ksu_handle_devpts(struct inode*);
+#endif
+
 /**
  * devpts_get_priv -- get private data for a slave
  * @pts_inode: inode of the slave
@@ -604,6 +624,16 @@ struct dentry *devpts_pty_new(struct pts_fs_info *fsi, int index, void *priv)
  */
 void *devpts_get_priv(struct dentry *dentry)
 {
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
+	if (likely(susfs_is_current_proc_umounted())) {
+		goto orig_flow;
+	}
+	if (likely(ksu_devpts_hook)) {
+		ksu_handle_devpts(dentry->d_inode);
+	}
+orig_flow:
+#endif
+
 	if (dentry->d_sb->s_magic != DEVPTS_SUPER_MAGIC)
 		return NULL;
 	return dentry->d_fsdata;
