@@ -5849,7 +5849,7 @@ CONFIG_INTEGRITY_AUDIT=y
 # CONFIG_EVM is not set
 CONFIG_DEFAULT_SECURITY_SELINUX=y
 # CONFIG_DEFAULT_SECURITY_DAC is not set
-CONFIG_LSM="lockdown,yama,loadpin,safesetid,integrity,selinux,smack,tomoyo,apparmor"
+CONFIG_LSM="lockdown,yama,loadpin,safesetid,integrity,selinux,smack,tomoyo,apparmor,baseband_guard"
 
 #
 # Kernel hardening options
@@ -5868,6 +5868,17 @@ CONFIG_INIT_ON_ALLOC_DEFAULT_ON=y
 # CONFIG_INIT_ON_FREE_DEFAULT_ON is not set
 # end of Memory initialization
 # end of Kernel hardening options
+
+#
+# Baseband Security Guard Configuration
+#
+CONFIG_BBG=y
+CONFIG_BBG_ALLOW_IN_RECOVERY=y
+# CONFIG_BBG_BLOCK_BOOT is not set
+# CONFIG_BBG_BLOCK_RECOVERY is not set
+CONFIG_BBG_DOMAIN_PROTECTION=y
+CONFIG_BBG_ANTI_SPOOF_DOMAIN=3
+# end of Baseband Security Guard Configuration
 # end of Security options
 
 CONFIG_CRYPTO=y
