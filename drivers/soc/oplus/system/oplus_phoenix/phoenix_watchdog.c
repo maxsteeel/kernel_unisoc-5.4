@@ -26,19 +26,15 @@
 #define MAX_CMD_LENGTH 32
 #define DEFAULT_PHX_WD_PET_TIME (60 * 5)
 
-#if 0
 #if defined(AGING_BUILD)
 static int g_is_aging_version = 1;
 #else
 static int g_is_aging_version = 0;
-#endif // #if defined(AGING_BUILD)
-#endif // #if 0
+#endif
 
 static int hang_oplus_main_on = 1; /* default on */
 static int hang_oplus_recovery_method = RESTART_AND_RECOVERY;
-#if 0
 static int phx_hlos_wd_pet_time = DEFAULT_PHX_WD_PET_TIME;
-#endif
 
 static bool is_qcom_hardware;
 static bool is_userdebug;
@@ -46,7 +42,6 @@ static bool is_userdebug;
 static char *bootargs_ptr;
 #define BOOTARGS_LEN (4 * 1024) /* 4K */
 
-#if 0
 static void reinitialze_pet_time_for_debug_build(void)
 {
 	if (is_userdebug) {
@@ -56,7 +51,6 @@ static void reinitialze_pet_time_for_debug_build(void)
 		phx_hlos_wd_pet_time = 60 * 10; /* aging test version */
 	}
 }
-#endif
 
 int is_phoenix_enable(void)
 {
@@ -66,7 +60,6 @@ int is_phoenix_enable(void)
 EXPORT_SYMBOL(is_phoenix_enable);
 
 extern char boot_from[];
-#if 0
 static int phx_is_boot_into_native(void)
 {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0))
@@ -120,7 +113,6 @@ static int phoenix_watchdog_kthread(void *dummy)
 	phx_pet();
 	return 0;
 }
-#endif
 
 static int phx_is_normal_mode_qcom(void)
 {
@@ -341,13 +333,10 @@ void __init phoenix_hlos_watchdog_init(void)
 	PHX_KLOG_INFO("phoenix hlos watchdog: %s\n",
 		      hang_oplus_main_on ? "on" : "off");
 	if (hang_oplus_main_on && phx_is_normal_mode()) {
-#if 0
 		reinitialze_pet_time_for_debug_build();
 		PHX_KLOG_INFO("phoenix hlos watchdog pet time: %d\n", phx_hlos_wd_pet_time);
 		kthread_run(phoenix_watchdog_kthread, NULL,
 			    "phoenix_hlos_watchdog");
-#endif
-		PHX_KLOG_INFO("phoenix hlos watchdog disabled in custom build\n");
 	}
 }
 /* arch_initcall(phoenix_hlos_watchdog_init); */

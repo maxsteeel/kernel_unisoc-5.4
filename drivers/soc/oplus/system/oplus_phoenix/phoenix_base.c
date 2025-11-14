@@ -155,8 +155,8 @@ static void phx_handle_native_reboot_into_recovery(const char *happen_time)
 
 static void phx_handle_hang_oplus(const char *happen_time)
 {
-    pr_warn("phx_handle_hang_oplus: hang detected, ignoring forced panic\n");
-    return;
+	phx_klog_bgitooterror(ERROR_HANG_OPLUS, happen_time);
+	phx_log_dump(ERROR_HANG_OPLUS);
 }
 
 static void
