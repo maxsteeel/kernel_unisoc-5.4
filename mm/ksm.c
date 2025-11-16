@@ -267,10 +267,10 @@ static int ksm_stable_node_chains_prune_millisecs = 2000;
 static int ksm_max_page_sharing = 256;
 
 /* Number of pages ksmd should scan in one batch */
-static unsigned int ksm_thread_pages_to_scan = 100;
+static unsigned int ksm_thread_pages_to_scan = 256;
 
 /* Milliseconds ksmd should sleep between batches */
-static unsigned int ksm_thread_sleep_millisecs = 20;
+static unsigned int ksm_thread_sleep_millisecs =;
 
 /* Checksum of an empty (zeroed) page */
 static unsigned int zero_checksum __read_mostly;
@@ -2914,7 +2914,7 @@ static ssize_t run_store(struct kobject *kobj, struct kobj_attribute *attr,
 			err = unmerge_and_remove_all_rmap_items();
 			clear_current_oom_origin();
 			if (err) {
-				ksm_run = KSM_RUN_STOP;
+				ksm_run = KSM_RUN_MERGE;
 				count = err;
 			}
 		}
