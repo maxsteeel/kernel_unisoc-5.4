@@ -546,7 +546,7 @@ restart:
 			continue;
 		/* Wait for dquot users */
 		if (atomic_read(&dquot->dq_count)) {
-			dqgrab(dquot);
+			atomic_inc(&dquot->dq_count);
 			spin_unlock(&dq_list_lock);
 			/*
 			 * Once dqput() wakes us up, we know it's time to free
@@ -2415,7 +2415,8 @@ int dquot_load_quota_sb(struct super_block *sb, int type, int format_id,
 
 	error = add_dquot_ref(sb, type);
 	if (error)
-		dquot_disable(sb, type, flags);
+		dquot_disable(sb, type,
+			      DQUOT_USAGE_ENABLED | DQUOT_LIMITS_ENABLED);
 
 	return error;
 out_fmt:
@@ -2542,21 +2543,15 @@ int dquot_quota_on_mount(struct super_block *sb, char *qf_name,
 	struct dentry *dentry;
 	int error;
 
-	dentry = lookup_one_len_unlocked(qf_name, sb->s_root, strlen(qf_name));
+	dentry = lookup_positive_unlocked(qf_name, sb->s_root, strlen(qf_name));
 	if (IS_ERR(dentry))
 		return PTR_ERR(dentry);
-
-	if (d_really_is_negative(dentry)) {
-		error = -ENOENT;
-		goto out;
-	}
 
 	error = security_quota_on(dentry);
 	if (!error)
 		error = vfs_load_quota_inode(d_inode(dentry), type, format_id,
 				DQUOT_USAGE_ENABLED | DQUOT_LIMITS_ENABLED);
 
-out:
 	dput(dentry);
 	return error;
 }

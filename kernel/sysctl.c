@@ -1634,6 +1634,14 @@ static struct ctl_table vm_table[] = {
 		.proc_handler	= percpu_pagelist_fraction_sysctl_handler,
 		.extra1		= SYSCTL_ZERO,
 	},
+	{
+		.procname	= "page_lock_unfairness",
+		.data		= &sysctl_page_lock_unfairness,
+		.maxlen		= sizeof(sysctl_page_lock_unfairness),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec_minmax,
+		.extra1		= SYSCTL_ZERO,
+	},
 #ifdef CONFIG_MMU
 	{
 		.procname	= "max_map_count",
@@ -1796,6 +1804,27 @@ static struct ctl_table vm_table[] = {
 		.extra2		= SYSCTL_ONE,
 	},
 #endif
+	{
+		.procname	= "anon_min_kbytes",
+		.data		= &sysctl_anon_min_kbytes,
+		.maxlen		= sizeof(unsigned long),
+		.mode		= 0644,
+		.proc_handler	= proc_doulongvec_minmax,
+	},
+	{
+		.procname	= "clean_low_kbytes",
+		.data		= &sysctl_clean_low_kbytes,
+		.maxlen		= sizeof(unsigned long),
+		.mode		= 0644,
+		.proc_handler	= proc_doulongvec_minmax,
+	},
+	{
+		.procname	= "clean_min_kbytes",
+		.data		= &sysctl_clean_min_kbytes,
+		.maxlen		= sizeof(unsigned long),
+		.mode		= 0644,
+		.proc_handler	= proc_doulongvec_minmax,
+	},
 	{
 		.procname	= "user_reserve_kbytes",
 		.data		= &sysctl_user_reserve_kbytes,

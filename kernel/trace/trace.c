@@ -3542,10 +3542,15 @@ static void *s_start(struct seq_file *m, loff_t *pos)
 	 * name may be used instead of a strcmp(), as iter->trace->name
 	 * will point to the same string as current_trace->name.
 	 */
-	mutex_lock(&trace_types_lock);
-	if (unlikely(tr->current_trace && iter->trace->name != tr->current_trace->name))
+	if (unlikely(tr->current_trace && iter->trace->name != tr->current_trace->name)) {
+		/* Close iter->trace before switching to the new current tracer */
+		if (iter->trace->close)
+			iter->trace->close(iter);
 		*iter->trace = *tr->current_trace;
-	mutex_unlock(&trace_types_lock);
+		/* Reopen the new current tracer */
+		if (iter->trace->open)
+			iter->trace->open(iter);
+	}
 
 #ifdef CONFIG_TRACER_MAX_TRACE
 	if (iter->snapshot && iter->trace->use_max_tr)

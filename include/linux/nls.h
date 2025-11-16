@@ -47,7 +47,7 @@ enum utf16_endian {
 /* nls_base.c */
 extern int __register_nls(struct nls_table *, struct module *);
 extern int unregister_nls(struct nls_table *);
-extern struct nls_table *load_nls(char *);
+extern struct nls_table *load_nls(const char *charset);
 extern void unload_nls(struct nls_table *);
 extern struct nls_table *load_nls_default(void);
 #define register_nls(nls) __register_nls((nls), THIS_MODULE)
@@ -106,4 +106,3 @@ nls_nullsize(const struct nls_table *codepage)
 #define MODULE_ALIAS_NLS(name)	MODULE_ALIAS("nls_" __stringify(name))
 
 #endif /* _LINUX_NLS_H */
-

@@ -39,6 +39,8 @@ struct user_struct;
 struct writeback_control;
 struct bdi_writeback;
 
+extern int sysctl_page_lock_unfairness;
+
 void init_mm_internals(void);
 
 #ifndef CONFIG_NEED_MULTIPLE_NODES	/* Don't use mapnrs, do it properly */
@@ -208,6 +210,10 @@ static inline void __mm_zero_struct_page(struct page *page)
 #define DEFAULT_MAX_MAP_COUNT	(USHRT_MAX - MAPCOUNT_ELF_CORE_MARGIN)
 
 extern int sysctl_max_map_count;
+
+extern unsigned long sysctl_anon_min_kbytes;
+extern unsigned long sysctl_clean_low_kbytes;
+extern unsigned long sysctl_clean_min_kbytes;
 
 extern unsigned long sysctl_user_reserve_kbytes;
 extern unsigned long sysctl_admin_reserve_kbytes;
