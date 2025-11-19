@@ -18,10 +18,8 @@
 #include <linux/rwsem.h>
 #include <linux/zsmalloc.h>
 #include <linux/crypto.h>
-#include <linux/spinlock.h>
 
-#include "zcomp.h"
-#include "zram_dedup.h"
+#include "../zcomp.h"
 
 #define SECTORS_PER_PAGE_SHIFT	(PAGE_SHIFT - SECTOR_SHIFT)
 #define SECTORS_PER_PAGE	(1 << SECTORS_PER_PAGE_SHIFT)
@@ -52,25 +50,21 @@ enum zram_pageflags {
 	ZRAM_UNDER_WB,	/* page is under writeback */
 	ZRAM_HUGE,	/* Incompressible page */
 	ZRAM_IDLE,	/* not accessed page since last idle marking */
-
-	ZRAM_IDLE_FAST,	/* not accessed page since last idle_fast marking */
+#ifdef CONFIG_HYBRIDSWAP_CORE
+	ZRAM_BATCHING_OUT,
+	ZRAM_FROM_HYBRIDSWAP,
+	ZRAM_MCGID_CLEAR,
+	ZRAM_IN_BD, /* zram stored in back device */
+#endif
 	__NR_ZRAM_PAGEFLAGS,
 };
 
 /*-- Data structures */
 
-struct zram_entry {
-	struct rb_node rb_node;
-	u32 checksum;
-	unsigned int  len;
-	unsigned long refcount;
-	unsigned long handle;
-};
-
 /* Allocated for each disk page */
 struct zram_table_entry {
 	union {
-		struct zram_entry *entry;
+		unsigned long handle;
 		unsigned long element;
 	};
 	unsigned long flags;
@@ -98,13 +92,6 @@ struct zram_stats {
 	atomic64_t bd_reads;		/* no. of reads from backing device */
 	atomic64_t bd_writes;		/* no. of writes from backing device */
 #endif
-	atomic64_t dup_data_size;	/* compressed size of pages duplicated */
-	atomic64_t meta_data_size;	/* size of zram_entries */
-};
-
-struct zram_hash {
-	spinlock_t lock;
-	struct rb_root rb_root;
 };
 
 struct zram {
@@ -112,8 +99,6 @@ struct zram {
 	struct zs_pool *mem_pool;
 	struct zcomp *comp;
 	struct gendisk *disk;
-	struct zram_hash *hash;
-	size_t hash_size;
 	/* Prevent concurrent execution of device init */
 	struct rw_semaphore init_lock;
 	/*
@@ -145,16 +130,11 @@ struct zram {
 #ifdef CONFIG_ZRAM_MEMORY_TRACKING
 	struct dentry *debugfs_dir;
 #endif
-	bool use_dedup;
-};
-
-static inline bool zram_dedup_enabled(struct zram *zram)
-{
-#ifdef CONFIG_ZRAM_DEDUP
-	return zram->use_dedup;
-#else
-	return false;
+#if (defined CONFIG_ZRAM_WRITEBACK) || (defined CONFIG_HYBRIDSWAP_CORE)
+	unsigned long increase_nr_pages;
 #endif
-}
-void zram_entry_free(struct zram *zram, struct zram_entry *entry);
+#ifdef CONFIG_HYBRIDSWAP_CORE
+	struct hybridswap *hs_swap;
+#endif
+};
 #endif
