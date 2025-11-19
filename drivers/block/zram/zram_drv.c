@@ -1050,7 +1050,12 @@ static ssize_t comp_algorithm_store(struct device *dev,
 		return -EBUSY;
 	}
 
-	strcpy(zram->compressor, compressor);
+	if (!strcmp(compressor, "lz4")) {
+        pr_info("ZRAM: Android asked for 'lz4', but we forced 'lz4kd' ;)\n");
+        strcpy(zram->compressor, "lz4kd");
+    } else {
+        strcpy(zram->compressor, compressor);
+    }
 	up_write(&zram->init_lock);
 	return len;
 }

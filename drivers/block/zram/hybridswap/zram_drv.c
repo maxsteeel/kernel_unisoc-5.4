@@ -46,7 +46,7 @@ static DEFINE_IDR(zram_index_idr);
 static DEFINE_MUTEX(zram_index_mutex);
 
 static int zram_major;
-static const char *default_compressor = "lzo-rle";
+static const char *default_compressor = CONFIG_ZRAM_DEF_COMP;;
 
 /* Module params (documentation at end) */
 static unsigned int num_devices = 1;
@@ -946,7 +946,12 @@ static ssize_t comp_algorithm_store(struct device *dev,
 		return -EBUSY;
 	}
 
-	strcpy(zram->compressor, compressor);
+	if (!strcmp(compressor, "lz4")) {
+        pr_info("ZRAM: Android asked for 'lz4', but we forced 'lz4kd' ;)\n");
+        strcpy(zram->compressor, "lz4kd");
+    } else {
+        strcpy(zram->compressor, compressor);
+    }
 	up_write(&zram->init_lock);
 	return len;
 }
