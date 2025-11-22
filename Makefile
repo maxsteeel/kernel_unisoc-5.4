@@ -364,7 +364,7 @@ include scripts/subarch.include
 # Alternatively CROSS_COMPILE can be set in the environment.
 # Default value for CROSS_COMPILE is not to prefix executables
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
-ARCH		?= $(SUBARCH)
+ARCH		?= arm64
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
@@ -461,7 +461,7 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 NOSTDINC_FLAGS :=
 CFLAGS_MODULE   =
 AFLAGS_MODULE   =
-LDFLAGS_MODULE  =
+LDFLAGS_MODULE  = --strip-debug
 CFLAGS_KERNEL	=
 AFLAGS_KERNEL	=
 LDFLAGS_vmlinux =
@@ -488,7 +488,11 @@ KBUILD_CFLAGS   := -Wall -Werror -Wundef -Werror=strict-prototypes -Wno-trigraph
 		   -fno-strict-aliasing -fno-common -fshort-wchar -fno-PIE \
 		   -Werror=implicit-function-declaration -Werror=implicit-int \
 		   -Werror=return-type -Wno-format-security \
-		   -std=gnu89
+		   -std=gnu89 \
+		   -mcpu=cortex-a55 -fdiagnostics-color=always -pipe \
+		   -Wno-void-pointer-to-enum-cast -Wno-misleading-indentation -Wno-unused-function -Wno-bool-operation \
+		   -Wno-unsequenced -Wno-void-pointer-to-int-cast -Wno-unused-variable -Wno-pointer-to-int-cast -Wno-pointer-to-enum-cast \
+		   -Wno-fortify-source -Wno-strlcpy-strlcat-size
 KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
@@ -768,6 +772,8 @@ endif
 
 ifneq ($(CONFIG_FRAME_WARN),0)
 KBUILD_CFLAGS += $(call cc-option,-Wframe-larger-than=${CONFIG_FRAME_WARN})
+KBUILD_LDFLAGS	+= $(call cc-option,-plugin-opt=-warn-stack-size=${CONFIG_FRAME_WARN})
+KBUILD_LDFLAGS	+= $(call cc-option,-fatal-warnings)
 endif
 
 stackp-flags-$(CONFIG_CC_HAS_STACKPROTECTOR_NONE) := -fno-stack-protector
@@ -924,12 +930,6 @@ KBUILD_LDFLAGS += $(LD_FLAGS_LTO_CLANG)
 KBUILD_LDFLAGS_MODULE += $(LD_FLAGS_LTO_CLANG)
 
 KBUILD_LDS_MODULE += scripts/module-lto.lds
-
-# Check for frame size exceeding threshold during prolog/epilog insertion.
-ifneq ($(CONFIG_FRAME_WARN),0)
-KBUILD_LDFLAGS	+= -plugin-opt=-warn-stack-size=$(CONFIG_FRAME_WARN)
-KBUILD_LDFLAGS	+= -fatal-warnings
-endif
 endif
 
 ifdef CONFIG_LTO
