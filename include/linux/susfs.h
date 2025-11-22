@@ -50,11 +50,6 @@ struct st_external_dir {
 
 /* sus_mount */
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-struct st_susfs_sus_mount {
-	char                                    target_pathname[SUSFS_MAX_LEN_PATHNAME];
-	int                                     err;
-};
-
 struct st_susfs_hide_sus_mnts_for_all_procs {
 	bool                                    enabled;
 	int                                     err;
@@ -193,7 +188,6 @@ void susfs_add_sus_path_loop(void __user **user_info);
 #endif
 /* sus_mount */
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-void susfs_add_sus_mount(void __user **user_info);
 void susfs_set_hide_sus_mnts_for_all_procs(void __user **user_info);
 void susfs_set_umount_for_zygote_iso_service(void __user **user_info);
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
@@ -208,7 +202,7 @@ void susfs_sus_ino_for_show_map_vma(unsigned long ino, dev_t *out_dev, unsigned 
 /* try_umount */
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 void susfs_add_try_umount(void __user **user_info);
-void susfs_try_umount(void);
+void susfs_try_umount(uid_t uid);
 #endif // #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 /* spoof_uname */
 #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME

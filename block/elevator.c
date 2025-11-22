@@ -683,7 +683,7 @@ void elevator_init_mq(struct request_queue *q)
 		return;
 
 	if (!q->required_elevator_features)
-		e = elevator_get_default(q);
+		e = elevator_get(q, CONFIG_DEFAULT_IOSCHED, false);
 	else
 		e = elevator_get_by_features(q);
 	if (!e)

@@ -30,37 +30,21 @@
 #include <uapi/linux/mount.h>
 #include <linux/fs_context.h>
 #include <linux/shmem_fs.h>
-#if defined(CONFIG_KSU_SUSFS_SUS_MOUNT) || defined(CONFIG_KSU_SUSFS_TRY_UMOUNT) || defined(CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT) || defined(CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT) || defined(CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT)
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 #include <linux/susfs_def.h>
-#endif
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 
 #include "pnode.h"
 #include "internal.h"
 
-#if defined(CONFIG_KSU_SUSFS_SUS_MOUNT) || defined(CONFIG_KSU_SUSFS_TRY_UMOUNT) || defined(CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT) || defined(CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT) || defined(CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT)
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 extern bool susfs_is_current_ksu_domain(void);
 extern bool susfs_is_current_zygote_domain(void);
 extern bool susfs_is_boot_completed_triggered;
-#endif // #if defined(CONFIG_KSU_SUSFS_SUS_MOUNT) || defined(CONFIG_KSU_SUSFS_TRY_UMOUNT) || defined(CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT) || defined(CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT) || defined(CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT)
-
-#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 static DEFINE_IDA(susfs_ksu_mnt_group_ida);
 
 #define CL_COPY_MNT_NS BIT(25) /* used by copy_mnt_ns() */
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-
-#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
-extern void susfs_auto_add_sus_ksu_default_mount(const char __user *to_pathname);
-bool susfs_is_auto_add_sus_ksu_default_mount_enabled = true;
-#endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
-#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT
-extern void susfs_auto_add_sus_bind_mount(const char *pathname, struct path *path_target);
-bool susfs_is_auto_add_sus_bind_mount_enabled = true;
-#endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT
-#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
-extern void susfs_auto_add_try_umount_for_bind_mount(struct path *path);
-bool susfs_is_auto_add_try_umount_for_bind_mount_enabled = true;
-#endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
 
 /* Maximum number of mounts in a mount namespace */
 unsigned int sysctl_mount_max __read_mostly = 100000;
@@ -2554,23 +2538,6 @@ static int do_loopback(struct path *path, const char *old_name,
 		umount_tree(mnt, UMOUNT_SYNC);
 		unlock_mount_hash();
 	}
-#if defined(CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT) || defined(CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT)
-	// - Check if bind mounted path should be hidden and umounted automatically.
-	// - We keep checking for ksu process only until boot-completed stage is triggered
-	if (!susfs_is_boot_completed_triggered && susfs_is_current_ksu_domain()) {
-#if defined(CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT)
-		if (susfs_is_auto_add_sus_bind_mount_enabled) {
-			susfs_auto_add_sus_bind_mount(old_name, &old_path);
-		}
-#endif
-#if defined(CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT)
-		if (susfs_is_auto_add_try_umount_for_bind_mount_enabled) {
-			susfs_auto_add_try_umount_for_bind_mount(path);
-		}
-#endif
-	}
-#endif // #if defined(CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT) || defined(CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT)
-
 out2:
 	unlock_mount(mp);
 out:
@@ -3613,14 +3580,6 @@ int ksys_mount(const char __user *dev_name, const char __user *dir_name,
 		goto out_data;
 
 	ret = do_mount(kernel_dev, dir_name, kernel_type, flags, options);
-#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
-	// - We do not check anymore if boot-completed stage is triggered
-	//   just to stop the performance loss
-	// - Just for the compatibility of Magic Mount KernelSU
-	if (!susfs_is_boot_completed_triggered && !ret && susfs_is_auto_add_sus_ksu_default_mount_enabled && susfs_is_current_ksu_domain()) {
-		susfs_auto_add_sus_ksu_default_mount(dir_name);
-	}
-#endif
 
 	kfree(options);
 out_data:
@@ -3832,14 +3791,6 @@ out_to:
 	path_put(&to_path);
 out_from:
 	path_put(&from_path);
-#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
-	// - We do not check anymore if boot-completed stage is triggered
-	//   just to stop the performance loss
-	// - For Legacy KSU mount scheme
-	if (!susfs_is_boot_completed_triggered && !ret && susfs_is_auto_add_sus_ksu_default_mount_enabled && susfs_is_current_ksu_domain()) {
-		susfs_auto_add_sus_ksu_default_mount(to_pathname);
-	}
-#endif
 	return ret;
 }
 
@@ -4321,27 +4272,4 @@ void susfs_reorder_mnt_id(void) {
 	put_mnt_ns(mnt_ns);
 }
 
-void susfs_assign_fake_mnt_id(struct mount *mnt) {
-	lock_mount_hash();
-
-	ida_free(&mnt_id_ida, mnt->mnt_id);
-
-	mnt->mnt_id = DEFAULT_KSU_MNT_ID;
-	mnt->mnt_group_id = ida_alloc_min(&susfs_ksu_mnt_group_ida, DEFAULT_KSU_MNT_GROUP_ID, GFP_KERNEL);
-
-	unlock_mount_hash();
-}
-#endif
-#ifdef CONFIG_KSU_SUSFS
-bool susfs_is_mnt_devname_ksu(struct path *path) {
-	struct mount *mnt;
-
-	if (path && path->mnt) {
-		mnt = real_mount(path->mnt);
-		if (mnt && mnt->mnt_devname && !strcmp(mnt->mnt_devname, "KSU")) {
-			return true;
-		}
-	}
-	return false;
-}
 #endif
