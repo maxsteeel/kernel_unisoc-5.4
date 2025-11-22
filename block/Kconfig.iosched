@@ -82,51 +82,6 @@ config CFQ_GROUP_IOSCHED
 	---help---
 	  Enable group IO scheduling in CFQ.
 
-choice
-
-	prompt "Default I/O scheduler"
-	default DEFAULT_CFQ
-	help
-	  Select the I/O scheduler which will be used by default for all
-	  block devices.
-
-	config DEFAULT_DEADLINE
-		bool "Deadline" if IOSCHED_DEADLINE=y
-
-	config DEFAULT_CFQ
-		bool "CFQ" if IOSCHED_CFQ=y
-
-	config DEFAULT_NOOP
-		bool "No-op"
-
-	config DEFAULT_ANXIETY
-		bool "Anxiety" if IOSCHED_ANXIETY=y
-	
-	config DEFAULT_MAPLE
-		bool "Maple" if IOSCHED_MAPLE=y
-
-	config DEFAULT_ZEN
-		bool "ZEN" if IOSCHED_ZEN=y
-
-	config DEFAULT_FIOPS
-		bool "FIOPS" if IOSCHED_FIOPS=y
-
-	config DEFAULT_SIO
-		bool "SIO" if IOSCHED_SIO=y
-
-endchoice
-
-config DEFAULT_IOSCHED
-	string
-	default "deadline" if DEFAULT_DEADLINE
-	default "cfq" if DEFAULT_CFQ
-	default "noop" if DEFAULT_NOOP
-	default "anxiety" if DEFAULT_ANXIETY
-	default "zen" if DEFAULT_ZEN
-	default "maple" if DEFAULT_MAPLE
-	default "fiops" if DEFAULT_FIOPS
-	default "sio" if DEFAULT_SIO
-
 config MQ_IOSCHED_DEADLINE
 	tristate "MQ deadline I/O scheduler"
 	default y
@@ -167,6 +122,87 @@ config BFQ_CGROUP_DEBUG
 	---help---
 	Enable some debugging help. Currently it exports additional stat
 	files in a cgroup which can be useful for debugging.
+
+
+config MQ_IOSCHED_SSG
+	tristate "SamSung Generic I/O scheduler"
+	default n
+	help
+	  SamSung Generic IO scheduler.
+
+config MQ_IOSCHED_SSG_CGROUP
+	tristate "Control Group for SamSung Generic I/O scheduler"
+	default n
+	depends on BLK_CGROUP
+	depends on MQ_IOSCHED_SSG
+	help
+	  Control Group for SamSung Generic IO scheduler.
+
+choice
+
+	prompt "Default I/O scheduler"
+	default DEFAULT_CFQ
+	help
+	  Select the I/O scheduler which will be used by default for all
+	  block devices.
+
+	config DEFAULT_MQ_DEADLINE
+		bool "MQ_Deadline" if MQ_IOSCHED_DEADLINE=y
+
+	config DEFAULT_MQ_KYBER
+		bool "MQ_Kyber" if MQ_IOSCHED_KYBER=y
+
+	config DEFAULT_BFQ
+		bool "BFQ" if IOSCHED_BFQ=y
+
+	config DEFAULT_MQ_SSG
+		bool "SSG" if MQ_IOSCHED_SSG=y
+
+	config DEFAULT_DEADLINE
+		bool "Deadline" if IOSCHED_DEADLINE=y
+
+	config DEFAULT_CFQ
+		bool "CFQ" if IOSCHED_CFQ=y
+
+	config DEFAULT_NOOP
+		bool "No-op"
+
+	config DEFAULT_ANXIETY
+		bool "Anxiety" if IOSCHED_ANXIETY=y
+	
+	config DEFAULT_MAPLE
+		bool "Maple" if IOSCHED_MAPLE=y
+
+	config DEFAULT_ZEN
+		bool "ZEN" if IOSCHED_ZEN=y
+
+	config DEFAULT_FIOPS
+		bool "FIOPS" if IOSCHED_FIOPS=y
+
+	config DEFAULT_SIO
+		bool "SIO" if IOSCHED_SIO=y
+
+	config NONE_DEFAULT
+		bool "NONE"
+		
+endchoice
+
+config DEFAULT_IOSCHED
+	string
+	default "mq_deadline" if DEFAULT_MQ_DEADLINE
+	default "kyber" if DEFAULT_MQ_KYBER
+	default "bfq" if DEFAULT_BFQ
+	default "ssg" if DEFAULT_MQ_SSG
+	default "deadline" if DEFAULT_DEADLINE
+	default "cfq" if DEFAULT_CFQ
+	default "noop" if DEFAULT_NOOP
+	default "anxiety" if DEFAULT_ANXIETY
+	default "zen" if DEFAULT_ZEN
+	default "maple" if DEFAULT_MAPLE
+	default "fiops" if DEFAULT_FIOPS
+	default "sio" if DEFAULT_SIO
+
+
 
 endmenu
 
