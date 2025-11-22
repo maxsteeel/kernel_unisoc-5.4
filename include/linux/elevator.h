@@ -52,6 +52,32 @@ struct elevator_mq_ops {
 	void (*init_icq)(struct io_cq *);
 	void (*exit_icq)(struct io_cq *);
 
+	/* Compat: legacy single-queue (sq) callbacks.
+	   Allows old ioscheds to initialize .ops.sq = { ... } */
+	struct {
+		enum elv_merge (*elevator_merge_fn)(struct request_queue *,
+						    struct request **, struct bio *);
+		void (*elevator_merged_fn)(struct request_queue *,
+					   struct request *, enum elv_merge);
+		void (*elevator_merge_req_fn)(struct request_queue *,
+					      struct request *, struct request *);
+		int (*elevator_allow_bio_merge_fn)(struct request_queue *,
+						   struct request *, struct bio *);
+		int (*elevator_allow_rq_merge_fn)(struct request_queue *,
+						  struct request *, struct request *);
+		int (*elevator_dispatch_fn)(struct request_queue *, int);
+		void (*elevator_add_req_fn)(struct request_queue *, struct request *);
+		void (*elevator_completed_req_fn)(struct request_queue *, struct request *);
+		struct request *(*elevator_former_req_fn)(struct request_queue *,
+							  struct request *);
+		struct request *(*elevator_latter_req_fn)(struct request_queue *,
+							   struct request *);
+		int (*elevator_init_fn)(struct request_queue *, struct elevator_type *);
+		void (*elevator_exit_fn)(struct elevator_queue *);
+		int (*elevator_queue_empty_fn)(struct request_queue *);
+		void (*elevator_init_icq_fn)(struct io_cq *);
+	} sq;
+
 	ANDROID_KABI_RESERVE(1);
 	ANDROID_KABI_RESERVE(2);
 	ANDROID_KABI_RESERVE(3);

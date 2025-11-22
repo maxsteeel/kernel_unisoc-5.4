@@ -53,8 +53,7 @@ static inline int __anxiety_dispatch(struct request_queue *q,
 		return -EINVAL;
 
 	list_del_init(&rq->queuelist);
-	elv_dispatch_sort(q, rq);
-
+	elv_rqhash_add(q, rq);
 	return 0;
 }
 
@@ -62,7 +61,7 @@ static uint16_t anxiety_dispatch_batch(struct request_queue *q)
 {
 	struct anxiety_data *adata = q->elevator->elevator_data;
 	uint8_t i;
-	uint16_t dispatched;
+	uint16_t dispatched = 0;
 
 	/* Batch sync requests according to tunables */
 	for (i = 0; i < adata->sync_ratio; i++) {
@@ -86,7 +85,7 @@ static uint16_t anxiety_dispatch_batch(struct request_queue *q)
 static uint16_t anxiety_dispatch_drain(struct request_queue *q)
 {
 	struct anxiety_data *adata = q->elevator->elevator_data;
-	uint16_t dispatched;
+	uint16_t dispatched = 0;
 
 	/*
 	 * Fallback to non-bias request dispatching when a mandatory
@@ -161,9 +160,9 @@ static int anxiety_init_queue(struct request_queue *q,
 	adata->sync_ratio = DEFAULT_SYNC_RATIO;
 
 	/* Set elevator to Anxiety */
-	spin_lock_irq(q->queue_lock);
+	spin_lock_irq(&q->queue_lock);
 	q->elevator = eq;
-	spin_unlock_irq(q->queue_lock);
+	spin_unlock_irq(&q->queue_lock);
 
 	return 0;
 }

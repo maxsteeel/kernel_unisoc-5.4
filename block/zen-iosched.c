@@ -76,7 +76,7 @@ static void zen_dispatch(struct zen_data *zdata, struct request *rq)
 {
 	/* Remove request from list and dispatch it */
 	rq_fifo_clear(rq);
-	elv_dispatch_add_tail(rq->q, rq);
+	elv_rqhash_add(rq->q, rq);
 
 	/* Increment # of sequential requests */
 	zdata->batching++;
@@ -176,9 +176,9 @@ static int zen_init_queue(struct request_queue *q, struct elevator_type *e)
     eq->elevator_data = zdata;
 	
  
-    spin_lock_irq(q->queue_lock);
+    spin_lock_irq(&q->queue_lock);
 	q->elevator = eq;
-	spin_unlock_irq(q->queue_lock);
+	spin_unlock_irq(&q->queue_lock);
 	
 	INIT_LIST_HEAD(&zdata->fifo_list[SYNC]);
 	INIT_LIST_HEAD(&zdata->fifo_list[ASYNC]);

@@ -192,7 +192,7 @@ maple_dispatch_request(struct maple_data *mdata, struct request *rq)
 	 * and dispatch it.
 	 */
 	rq_fifo_clear(rq);
-	elv_dispatch_add_tail(rq->q, rq);
+	elv_rqhash_add(rq->q, rq);
 
 	if (rq_data_dir(rq)) {
 		mdata->starved = 0;
@@ -326,9 +326,9 @@ static int maple_init_queue(struct request_queue *q, struct elevator_type *e)
 	mdata->writes_starved = writes_starved;
 	mdata->sleep_latency_multiple = sleep_latency_multiple;
 
-	spin_lock_irq(q->queue_lock);
+	spin_lock_irq(&q->queue_lock);
 	q->elevator = eq;
-	spin_unlock_irq(q->queue_lock);
+	spin_unlock_irq(&q->queue_lock);
 	return 0;
 }
 
@@ -430,7 +430,6 @@ static struct elevator_type iosched_maple = {
 		.elevator_init_fn		= maple_init_queue,
 		.elevator_exit_fn		= maple_exit_queue,
 	},
-
 	.elevator_attrs = maple_attrs,
 	.elevator_name = "maple",
 	.elevator_owner = THIS_MODULE,

@@ -57,7 +57,7 @@ config IOSCHED_SIO
 
 config IOSCHED_ZEN
 	tristate "Zen I/O scheduler"
-	default n
+	default y
 	---help---
 	FCFS, dispatches are back-inserted, deadlines ensure fairness.
         Should work best with devices where there is no travel delay.
@@ -144,6 +144,7 @@ config MQ_IOSCHED_KYBER
 
 config IOSCHED_BFQ
 	tristate "BFQ I/O scheduler"
+	default y
 	---help---
 	BFQ I/O scheduler for BLK-MQ. BFQ distributes the bandwidth of
 	of the device among all processes according to their weights,

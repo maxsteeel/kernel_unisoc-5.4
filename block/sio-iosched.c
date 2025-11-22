@@ -173,7 +173,7 @@ sio_dispatch_request(struct sio_data *sd, struct request *rq)
 	 * and dispatch it.
 	 */
 	rq_fifo_clear(rq);
-	elv_dispatch_add_tail(rq->q, rq);
+	elv_rqhash_add(rq->q, rq);
 
 	sd->batched++;
 
@@ -260,9 +260,9 @@ static int sio_init_queue(struct request_queue *q, struct elevator_type *e)
 	}
 	eq->elevator_data = sd;
 
-	spin_lock_irq(q->queue_lock);
+	spin_lock_irq(&q->queue_lock);
 	q->elevator = eq;
-	spin_unlock_irq(q->queue_lock);
+	spin_unlock_irq(&q->queue_lock);
 
 	/* Initialize fifo lists */
 	INIT_LIST_HEAD(&sd->fifo_list[SYNC][READ]);
@@ -382,7 +382,6 @@ static struct elevator_type iosched_sio = {
 		.elevator_init_fn		= sio_init_queue,
 		.elevator_exit_fn		= sio_exit_queue,
 	},
-
 	.elevator_attrs = sio_attrs,
 	.elevator_name = "sio",
 	.elevator_owner = THIS_MODULE,

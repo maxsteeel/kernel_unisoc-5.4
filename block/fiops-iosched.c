@@ -346,7 +346,7 @@ static u64 fiops_dispatch_request(struct fiops_data *fiopsd,
 	rq = rq_entry_fifo(ioc->fifo.next);
 
 	fiops_remove_request(rq);
-	elv_dispatch_add_tail(q, rq);
+	elv_rqhash_add(q, rq);
 
 	fiopsd->in_flight[rq_is_sync(rq)]++;
 	ioc->in_flight++;
@@ -613,9 +613,9 @@ static void fiops_kick_queue(struct work_struct *work)
 		container_of(work, struct fiops_data, unplug_work);
 	struct request_queue *q = fiopsd->queue;
 
-	spin_lock_irq(q->queue_lock);
-	__blk_run_queue(q);
-	spin_unlock_irq(q->queue_lock);
+	spin_lock_irq(&q->queue_lock);
+	blk_mq_run_hw_queues(q, true);
+	spin_unlock_irq(&q->queue_lock);
 }
 
 static int fiops_init_queue(struct request_queue *q, struct elevator_type *e)
@@ -636,9 +636,9 @@ static int fiops_init_queue(struct request_queue *q, struct elevator_type *e)
 	eq->elevator_data = fiopsd;
 
 	fiopsd->queue = q;
-	spin_lock_irq(q->queue_lock);
+	spin_lock_irq(&q->queue_lock);
 	q->elevator = eq;
-	spin_unlock_irq(q->queue_lock);
+	spin_unlock_irq(&q->queue_lock);
 
 	for (i = IDLE_WORKLOAD; i <= RT_WORKLOAD; i++)
 		fiopsd->service_tree[i] = FIOPS_RB_ROOT;
