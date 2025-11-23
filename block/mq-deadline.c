@@ -27,10 +27,12 @@
 /*
  * See Documentation/block/deadline-iosched.rst
  */
-static const int read_expire = HZ / 2;  /* max time before a read is submitted. */
-static const int write_expire = 5 * HZ; /* ditto for writes, these limits are SOFT! */
-static const int writes_starved = 2;    /* max times reads can starve a write */
-static const int fifo_batch = 16;       /* # of sequential requests treated as one
+static const int front_merges = 0;   /* do we allow front merges? */
+static const u32 async_depth = 2;     /* depth for async i/o throttling */
+static const int read_expire = HZ / 20;  /* max time before a read is submitted. */
+static const int write_expire = 10 * HZ; /* ditto for writes, these limits are SOFT! */
+static const int writes_starved = 16;    /* max times reads can starve a write */
+static const int fifo_batch = 1;       /* # of sequential requests treated as one
 				     by the above parameters. For throughput. */
 
 enum dd_data_dir {
@@ -467,7 +469,7 @@ static void dd_depth_updated(struct blk_mq_hw_ctx *hctx)
 	struct blk_mq_tags *tags = hctx->sched_tags;
 	unsigned int shift = tags->bitmap_tags.sb.shift;
 
-	dd->async_depth = max(1U, 3 * (1U << shift)  / 4);
+	dd->async_depth = async_depth;
 
 	sbitmap_queue_min_shallow_depth(&tags->bitmap_tags, dd->async_depth);
 }
@@ -526,7 +528,7 @@ static int dd_init_sched(struct request_queue *q, struct elevator_type *e)
 	dd->fifo_expire[DD_READ] = read_expire;
 	dd->fifo_expire[DD_WRITE] = write_expire;
 	dd->writes_starved = writes_starved;
-	dd->front_merges = 1;
+	dd->front_merges = front_merges;
 	dd->last_dir = DD_WRITE;
 	dd->fifo_batch = fifo_batch;
 	spin_lock_init(&dd->lock);
