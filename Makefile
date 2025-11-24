@@ -395,7 +395,7 @@ KCONFIG_CONFIG	?= .config
 export KCONFIG_CONFIG
 
 # SHELL used by kbuild
-CONFIG_SHELL := sh
+CONFIG_SHELL := bash
 
 HOST_LFS_CFLAGS := $(shell getconf LFS_CFLAGS 2>/dev/null)
 HOST_LFS_LDFLAGS := $(shell getconf LFS_LDFLAGS 2>/dev/null)
@@ -461,10 +461,10 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 NOSTDINC_FLAGS :=
 CFLAGS_MODULE   =
 AFLAGS_MODULE   =
-LDFLAGS_MODULE  = --strip-debug
+LDFLAGS_MODULE  = --strip-unused
 CFLAGS_KERNEL	=
 AFLAGS_KERNEL	=
-LDFLAGS_vmlinux =
+LDFLAGS_vmlinux = --strip-unused
 
 # Use USERINCLUDE when you must reference the UAPI directories only.
 USERINCLUDE    := \
@@ -492,7 +492,13 @@ KBUILD_CFLAGS   := -Wall -Werror -Wundef -Werror=strict-prototypes -Wno-trigraph
 		   -mcpu=cortex-a55 -fdiagnostics-color=always -pipe \
 		   -Wno-void-pointer-to-enum-cast -Wno-misleading-indentation -Wno-unused-function -Wno-bool-operation \
 		   -Wno-unsequenced -Wno-void-pointer-to-int-cast -Wno-unused-variable -Wno-pointer-to-int-cast -Wno-pointer-to-enum-cast \
-		   -Wno-fortify-source -Wno-strlcpy-strlcat-size
+		   -Wno-fortify-source -Wno-strlcpy-strlcat-size -Wno-gcc-compat -Wno-int-conversion -Wno-strict-prototypes -Wno-format \
+		   -Wno-declaration-after-statement -Wno-sign-compare -Wno-tautological-compare -Wno-unused-label -Wno-unused-value \
+		   -Wno-incompatible-pointer-types -Wno-implicit-function-declaration -Wno-array-bounds -Wno-redundant-decls \
+		   -Wno-unreachable-code -Wno-unknown-warning-option -Wno-missing-prototypes -Wno-compare-distinct-pointer-types \
+		   -Wno-implicit-int-float-conversion -Wno-shift-overflow -Wno-missing-field-initializers \
+		   -Wno-gnu-variable-sized-type-not-at-end -Wno-attributes -Wno-implicit-fallthrough -Wno-uninitialized -Wno-unknown-pragmas \
+		   -Wno-gnu-zero-variadic-macro-arguments -Wno-shift-negative-value -Wno-gnu-statement-expression -Wno-cast-align 
 KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
