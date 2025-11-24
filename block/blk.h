@@ -232,7 +232,7 @@ int ll_front_merge_fn(struct request *req,  struct bio *bio,
 		unsigned int nr_segs);
 struct request *attempt_back_merge(struct request_queue *q, struct request *rq);
 struct request *attempt_front_merge(struct request_queue *q, struct request *rq);
-int blk_attempt_req_merge(struct request_queue *q, struct request *rq,
+bool blk_attempt_req_merge(struct request_queue *q, struct request *rq,
 				struct request *next);
 unsigned int blk_recalc_rq_segments(struct request *rq);
 void blk_rq_set_mixed_merge(struct request *rq);
@@ -250,9 +250,13 @@ int blk_dev_init(void);
  */
 static inline bool blk_do_io_stat(struct request *rq)
 {
+#if 0
 	return rq->rq_disk &&
 	       (rq->rq_flags & RQF_IO_STAT) &&
 		!blk_rq_is_passthrough(rq);
+#else
+	return false;
+#endif
 }
 
 static inline void req_set_nomerge(struct request_queue *q, struct request *req)

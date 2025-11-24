@@ -27,12 +27,12 @@
 /*
  * See Documentation/block/deadline-iosched.rst
  */
-static const int front_merges = 0;   /* do we allow front merges? */
-static const u32 async_depth = 2;     /* depth for async i/o throttling */
-static const int read_expire = HZ / 20;  /* max time before a read is submitted. */
-static const int write_expire = 10 * HZ; /* ditto for writes, these limits are SOFT! */
-static const int writes_starved = 16;    /* max times reads can starve a write */
-static const int fifo_batch = 1;       /* # of sequential requests treated as one
+static const int front_merges = 1;      /* do front merges */
+static const u32 async_depth = 10;     /* depth for async i/o throttling */
+static const int read_expire = HZ / 5;  /* max time before a read is submitted. */
+static const int write_expire = 5 * HZ; /* ditto for writes, these limits are SOFT! */
+static const int writes_starved = 4;    /* max times reads can starve a write */
+static const int fifo_batch = 8;       /* # of sequential requests treated as one
 				     by the above parameters. For throughput. */
 
 enum dd_data_dir {
@@ -619,7 +619,7 @@ static void dd_insert_request(struct blk_mq_hw_ctx *hctx, struct request *rq,
 
 	prio = ioprio_class_to_prio[ioprio_class];
 
-	if (blk_mq_sched_try_insert_merge(q, rq))
+	if (blk_mq_sched_try_insert_merge(q, rq, &hctx->dispatch))
 		return;
 
 	blk_mq_sched_request_inserted(rq);

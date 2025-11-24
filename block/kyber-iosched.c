@@ -61,16 +61,16 @@ static const unsigned int kyber_depth[] = {
 	[KYBER_READ] = 256,
 	[KYBER_WRITE] = 128,
 	[KYBER_DISCARD] = 64,
-	[KYBER_OTHER] = 16,
+	[KYBER_OTHER] = 64,
 };
 
 /*
  * Default latency targets for each scheduling domain.
  */
 static const u64 kyber_latency_targets[] = {
-	[KYBER_READ] = 2ULL * NSEC_PER_MSEC,
-	[KYBER_WRITE] = 10ULL * NSEC_PER_MSEC,
-	[KYBER_DISCARD] = 5ULL * NSEC_PER_SEC,
+	[KYBER_READ] = 5ULL * NSEC_PER_MSEC,
+	[KYBER_WRITE] = 20ULL * NSEC_PER_MSEC,
+	[KYBER_DISCARD] = 50ULL * NSEC_PER_MSEC,
 };
 
 /*
@@ -80,8 +80,8 @@ static const u64 kyber_latency_targets[] = {
 static const unsigned int kyber_batch_size[] = {
 	[KYBER_READ] = 16,
 	[KYBER_WRITE] = 8,
-	[KYBER_DISCARD] = 1,
-	[KYBER_OTHER] = 1,
+	[KYBER_DISCARD] = 4,
+	[KYBER_OTHER] = 4,
 };
 
 /*
@@ -109,7 +109,7 @@ enum {
 	 */
 	KYBER_GOOD_BUCKETS = 1 << KYBER_LATENCY_SHIFT,
 	/* There are also (1 << KYBER_LATENCY_SHIFT) "bad" buckets. */
-	KYBER_LATENCY_BUCKETS = 2 << KYBER_LATENCY_SHIFT,
+	KYBER_LATENCY_BUCKETS = 2 * (1 << KYBER_LATENCY_SHIFT),
 };
 
 /*
