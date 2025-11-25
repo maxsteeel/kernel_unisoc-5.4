@@ -44,6 +44,20 @@ config PSTORE_LZ4HC_COMPRESS
 	help
 	  This option enables LZ4HC (high compression) mode algorithm.
 
+config PSTORE_LZ4K_COMPRESS
+	tristate "LZ4K compression"
+	depends on PSTORE
+	select CRYPTO_LZ4K
+	help
+	  This option enables LZ4K mode algorithm.
+
+config PSTORE_LZ4KD_COMPRESS
+	tristate "LZ4KD compression"
+	depends on PSTORE
+	select CRYPTO_LZ4KD
+	help
+	  This option enables LZ4KD mode algorithm.
+
 config PSTORE_842_COMPRESS
 	bool "842 compression"
 	depends on PSTORE

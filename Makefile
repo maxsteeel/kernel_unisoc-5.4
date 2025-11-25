@@ -485,20 +485,13 @@ LINUXINCLUDE    := \
 
 KBUILD_AFLAGS   := -D__ASSEMBLY__ -fno-PIE
 KBUILD_CFLAGS   := -Wall -Werror -Wundef -Werror=strict-prototypes -Wno-trigraphs \
-		   -fno-strict-aliasing -fno-common -fshort-wchar -fno-PIE \
-		   -Werror=implicit-function-declaration -Werror=implicit-int \
-		   -Werror=return-type -Wno-format-security \
-		   -std=gnu89 \
-		   -mcpu=cortex-a55 -fdiagnostics-color=always -pipe \
-		   -Wno-void-pointer-to-enum-cast -Wno-misleading-indentation -Wno-unused-function -Wno-bool-operation \
-		   -Wno-unsequenced -Wno-void-pointer-to-int-cast -Wno-unused-variable -Wno-pointer-to-int-cast -Wno-pointer-to-enum-cast \
-		   -Wno-fortify-source -Wno-strlcpy-strlcat-size -Wno-gcc-compat -Wno-int-conversion -Wno-strict-prototypes -Wno-format \
-		   -Wno-declaration-after-statement -Wno-sign-compare -Wno-tautological-compare -Wno-unused-label -Wno-unused-value \
-		   -Wno-incompatible-pointer-types -Wno-implicit-function-declaration -Wno-array-bounds -Wno-redundant-decls \
-		   -Wno-unreachable-code -Wno-unknown-warning-option -Wno-missing-prototypes -Wno-compare-distinct-pointer-types \
-		   -Wno-implicit-int-float-conversion -Wno-shift-overflow -Wno-missing-field-initializers \
-		   -Wno-gnu-variable-sized-type-not-at-end -Wno-attributes -Wno-implicit-fallthrough -Wno-uninitialized -Wno-unknown-pragmas \
-		   -Wno-gnu-zero-variadic-macro-arguments -Wno-shift-negative-value -Wno-gnu-statement-expression -Wno-cast-align 
+           -fno-strict-aliasing -fno-common -fshort-wchar -fno-PIE \
+           -Werror=implicit-function-declaration -Werror=implicit-int \
+           -Werror=return-type -Wno-format-security \
+           -std=gnu89 \
+           -march=armv8.2-a -mtune=cortex-a75 -pipe -fdiagnostics-color=always \
+           -Wno-unused-function -Wno-unused-variable -Wno-misleading-indentation \
+           -Wno-pointer-sign -Wno-frame-address 
 KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
@@ -936,6 +929,7 @@ KBUILD_LDFLAGS += $(LD_FLAGS_LTO_CLANG)
 KBUILD_LDFLAGS_MODULE += $(LD_FLAGS_LTO_CLANG)
 
 KBUILD_LDS_MODULE += scripts/module-lto.lds
+KBUILD_LDFLAGS += --threads=64 --thinlto-jobs=64
 endif
 
 ifdef CONFIG_LTO
