@@ -506,7 +506,7 @@ static bool irq_check_poll(struct irq_desc *desc)
 static bool irq_may_run(struct irq_desc *desc)
 {
 	if (!irqd_has_set(&desc->irq_data, IRQD_IRQ_INPROGRESS |
-			  IRQD_WAKEUP_ARMED | IRQD_WAKEUP_STATE))
+			  IRQD_WAKEUP_ARMED | IRQD_WAKEUP_STATE)) {
 #ifdef CONFIG_PM_SLEEP
 		if (unlikely(desc->no_suspend_depth &&
 			     irqd_is_wakeup_set(&desc->irq_data))) {
