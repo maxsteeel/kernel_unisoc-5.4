@@ -194,7 +194,7 @@ ifeq ($(need-sub-make),)
 # Do not print "Entering directory ...",
 # but we want to display it when entering to the output directory
 # so that IDEs/editors are able to understand relative filenames.
-MAKEFLAGS += --no-print-directory
+MAKEFLAGS += --no-print-directory -j$(NPROC)
 
 # Call a source code checker (by default, "sparse") as part of the
 # C compilation.
@@ -505,6 +505,11 @@ CLANG_FLAGS :=
 
 ifeq ($(AGING_BUILD),yes)
     CLANG_FLAGS += -DAGING_BUILD
+endif
+
+# Detect available host thread counts
+ifndef NPROC
+  NPROC = $(shell nproc)
 endif
 
 export ARCH SRCARCH CONFIG_SHELL BASH HOSTCC KBUILD_HOSTCFLAGS CROSS_COMPILE LD CC
@@ -917,7 +922,7 @@ ifdef CONFIG_THINLTO
 CC_FLAGS_LTO_CLANG := -flto=thin $(call cc-option, -fsplit-lto-unit)
 KBUILD_LDFLAGS	+= --thinlto-cache-dir=.thinlto-cache
 else
-CC_FLAGS_LTO_CLANG := -flto
+CC_FLAGS_LTO_CLANG := -flto 
 endif
 CC_FLAGS_LTO_CLANG += -fvisibility=default
 
@@ -928,12 +933,11 @@ KBUILD_LDFLAGS += $(LD_FLAGS_LTO_CLANG)
 KBUILD_LDFLAGS_MODULE += $(LD_FLAGS_LTO_CLANG)
 
 KBUILD_LDS_MODULE += scripts/module-lto.lds
-KBUILD_LDFLAGS += --threads=64 --thinlto-jobs=64
 endif
 
 ifdef CONFIG_LTO
 CC_FLAGS_LTO	:= $(CC_FLAGS_LTO_CLANG)
-KBUILD_CFLAGS	+= $(CC_FLAGS_LTO)
+KBUILD_CFLAGS	+= $(CC_FLAGS_LTO) 
 export CC_FLAGS_LTO
 endif
 
