@@ -683,9 +683,17 @@ config TCP_CONG_BBR2
 	using either TCP internal pacing or the fq ("Fair Queue") pacing packet
 	scheduler.
 
+config TCP_CONG_BBRPLUS
+        tristate "BBRPLUS TCP"
+        ---help---
+
+        BBRplus is an enhanced version of BBR (Bottleneck Bandwidth and RTT).
+        Originally introduced by dog250 & cx9208.
+        Same as BBR, requires the fq ("Fair Queue") pacing packet scheduler.
+
 choice
 	prompt "Default TCP congestion control"
-	default DEFAULT_CUBIC
+	default DEFAULT_BBRPLUS
 	help
 	  Select the TCP congestion control that will be used by default
 	  for all connections.
@@ -722,6 +730,9 @@ choice
 
 	config DEFAULT_BBR2
 		bool "BBR2" if TCP_CONG_BBR2=y
+
+	config DEFAULT_BBRPLUS
+		bool "BBRPLUS" if TCP_CONG_BBRPLUS=y
 
 	config DEFAULT_RENO
 		bool "Reno"

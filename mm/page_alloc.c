@@ -345,7 +345,7 @@ compound_page_dtor * const compound_page_dtors[] = {
  * tuned according to the amount of memory in the system.
  */
 int min_free_kbytes = 1024;
-int user_min_free_kbytes = -1;
+int user_min_free_kbytes = 98304;
 #ifdef CONFIG_DISCONTIGMEM
 /*
  * DiscontigMem defines memory ranges as separate pg_data_t even if the ranges
@@ -367,7 +367,7 @@ int watermark_scale_factor = 10;
  * free memory, to make space for new workloads. Anyone can allocate
  * down to the min watermarks controlled by min_free_kbytes above.
  */
-int extra_free_kbytes = 0;
+int extra_free_kbytes = 32768;
 
 static unsigned long nr_kernel_pages __initdata;
 static unsigned long nr_all_pages __initdata;
@@ -8137,7 +8137,7 @@ int min_free_kbytes_sysctl_handler(struct ctl_table *table, int write,
 		return rc;
 
 	if (write) {
-		user_min_free_kbytes = min_free_kbytes;
+		min_free_kbytes = user_min_free_kbytes;
 		setup_per_zone_wmarks();
 	}
 	return 0;

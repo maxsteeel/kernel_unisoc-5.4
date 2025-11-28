@@ -1622,7 +1622,7 @@ static struct ctl_table vm_table[] = {
 		.procname	= "extra_free_kbytes",
 		.data		= &extra_free_kbytes,
 		.maxlen		= sizeof(extra_free_kbytes),
-		.mode		= 0644,
+		.mode		= 0444,
 		.proc_handler	= extra_free_kbytes_sysctl_handler,
 		.extra1		= SYSCTL_ZERO,
 	},

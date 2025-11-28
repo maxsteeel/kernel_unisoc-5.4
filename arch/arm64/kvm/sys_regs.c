@@ -2827,7 +2827,7 @@ static int check_sysreg_table(const struct sys_reg_desc *table, unsigned int n)
 void kvm_sys_reg_table_init(void)
 {
 	unsigned int i;
-	struct sys_reg_desc clidr;
+	struct sys_reg_desc clidr = {};
 
 	/* Make sure tables are unique and in order. */
 	BUG_ON(check_sysreg_table(sys_reg_descs, ARRAY_SIZE(sys_reg_descs)));

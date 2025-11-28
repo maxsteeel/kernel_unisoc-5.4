@@ -449,7 +449,11 @@ static struct sysrq_key_op *sysrq_key_table[36] = {
 	NULL,				/* a */
 	&sysrq_reboot_op,		/* b */
 	&sysrq_crash_op,		/* c */
+#ifdef CONFIG_LOCKDEP
 	&sysrq_showlocks_op,		/* d */
+#else
+	NULL,				/* d */
+#endif
 	&sysrq_term_op,			/* e */
 	&sysrq_moom_op,			/* f */
 	/* g: May be registered for the kernel debugger */
@@ -461,7 +465,11 @@ static struct sysrq_key_op *sysrq_key_table[36] = {
 #else
 	NULL,				/* j */
 #endif
+#ifdef CONFIG_LOCKDEP
 	&sysrq_SAK_op,			/* k */
+#else
+	NULL,				/* k */
+#endif
 #ifdef CONFIG_SMP
 	&sysrq_showallcpus_op,		/* l */
 #else
@@ -473,7 +481,11 @@ static struct sysrq_key_op *sysrq_key_table[36] = {
 	NULL,				/* o */
 	&sysrq_showregs_op,		/* p */
 	&sysrq_show_timers_op,		/* q */
+#ifdef CONFIG_LOCKDEP
 	&sysrq_unraw_op,		/* r */
+#else
+	NULL,				/* r */
+#endif
 	&sysrq_sync_op,			/* s */
 	&sysrq_showstate_op,		/* t */
 	&sysrq_mountro_op,		/* u */

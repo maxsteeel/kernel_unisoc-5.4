@@ -675,7 +675,7 @@ static void avc_audit_pre_callback(struct audit_buffer *ab, void *a)
 	const char **perms;
 	int i, perm;
 
-	audit_log_format(ab, "avc:  %s ", sad->denied ? "denied" : "granted");
+	audit_log_format(ab, "avc:  denied ");
 
 	if (av == 0) {
 		audit_log_format(ab, " null");
@@ -748,8 +748,7 @@ bypass_orig_flow:
 	tclass = secclass_map[sad->tclass-1].name;
 	audit_log_format(ab, " tclass=%s", tclass);
 
-	if (sad->denied)
-		audit_log_format(ab, " permissive=%u", sad->result ? 0 : 1);
+	audit_log_format(ab, " permissive=%u", sad->result ? 0 : 1);
 
 	trace_selinux_audited(sad, scontext, tcontext, tclass);
 	kfree(tcontext);
@@ -786,6 +785,9 @@ noinline int slow_avc_audit(struct selinux_state *state,
 	struct common_audit_data stack_data;
 	struct selinux_audit_data sad;
 
+	if (!denied)
+		return 0;
+
 	if (WARN_ON(!tclass || tclass >= ARRAY_SIZE(secclass_map)))
 		return -EINVAL;
 
@@ -799,7 +801,6 @@ noinline int slow_avc_audit(struct selinux_state *state,
 	sad.ssid = ssid;
 	sad.tsid = tsid;
 	sad.audited = audited;
-	sad.denied = denied;
 	sad.result = result;
 	sad.state = state;
 
