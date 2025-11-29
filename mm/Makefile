@@ -120,3 +120,5 @@ GCOV_PROFILE_emem.o := $(CONFIG_SPRD_MEM_GCOV)
 obj-$(CONFIG_MEMFD_CREATE) += memfd.o
 obj-$(CONFIG_PROCESS_RECLAIM)	+= process_reclaim.o
 GCOV_PROFILE_process_reclaim.o := $(CONFIG_SPRD_MEM_GCOV)
+
+ccflags-y += -O3

@@ -35,3 +35,5 @@ obj-$(CONFIG_CPU_ISOLATION) += isolation.o
 obj-$(CONFIG_PSI) += psi.o
 obj-$(CONFIG_SPRD_CORE_ISOLATION) += sprd_core_ctl.o
 obj-$(CONFIG_SPRD_ROTATION_TASK) += sprd_rotation.o
+
+ccflags-y += -O3
