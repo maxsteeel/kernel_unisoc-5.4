@@ -30,9 +30,9 @@
 #include <uapi/linux/mount.h>
 #include <linux/fs_context.h>
 #include <linux/shmem_fs.h>
-#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+#if defined(CONFIG_KSU_SUSFS_SUS_MOUNT) || defined(CONFIG_KSU_SUSFS_TRY_UMOUNT)
 #include <linux/susfs_def.h>
-#endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+#endif
 
 #include "pnode.h"
 #include "internal.h"
@@ -41,10 +41,24 @@
 extern bool susfs_is_current_ksu_domain(void);
 extern bool susfs_is_current_zygote_domain(void);
 extern bool susfs_is_boot_completed_triggered;
+
 static DEFINE_IDA(susfs_ksu_mnt_group_ida);
 
 #define CL_COPY_MNT_NS BIT(25) /* used by copy_mnt_ns() */
-#endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+#endif
+
+#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
+extern void susfs_auto_add_sus_ksu_default_mount(const char __user *to_pathname);
+bool susfs_is_auto_add_sus_ksu_default_mount_enabled = true;
+#endif
+#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT
+extern void susfs_auto_add_sus_bind_mount(const char *pathname, struct path *path_target);
+bool susfs_is_auto_add_sus_bind_mount_enabled = true;
+#endif
+#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
+extern void susfs_auto_add_try_umount_for_bind_mount(struct path *path);
+bool susfs_is_auto_add_try_umount_for_bind_mount_enabled = true;
+#endif
 
 /* Maximum number of mounts in a mount namespace */
 unsigned int sysctl_mount_max __read_mostly = 100000;
@@ -1104,8 +1118,8 @@ struct vfsmount *vfs_create_mount(struct fs_context *fc)
 		return ERR_PTR(-EINVAL);
 
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-	// We keep checking for ksu process only until boot-completed stage is triggered
-	if (!susfs_is_boot_completed_triggered && susfs_is_current_ksu_domain()) {
+	// We keep checking for ksu process
+	if (susfs_is_current_ksu_domain()) {
 		mnt = susfs_alloc_sus_vfsmnt(fc->source ?: "none");
 		goto bypass_orig_flow;
 	}
@@ -1918,35 +1932,6 @@ out:
 	return retval;
 }
 
-static int can_umount(const struct path *path, int flags)
-{
-	struct mount *mnt = real_mount(path->mnt);
-	if (!may_mount())
-		return -EPERM;
-	if (path->dentry != path->mnt->mnt_root)
-		return -EINVAL;
-	if (!check_mnt(mnt))
-		return -EINVAL;
-	if (mnt->mnt.mnt_flags & MNT_LOCKED) /* Check optimistically */
-		return -EINVAL;
-	if (flags & MNT_FORCE && !capable(CAP_SYS_ADMIN))
-		return -EPERM;
-	return 0;
-}
-// caller is responsible for flags being sane
-int path_umount(struct path *path, int flags)
-{
-	struct mount *mnt = real_mount(path->mnt);
-	int ret;
-	ret = can_umount(path, flags);
-	if (!ret)
-		ret = do_umount(mnt, flags);
-	/* we mustn't call path_put() as that would clear mnt_expiry_mark */
-	dput(path->dentry);
-	mntput_no_expire(mnt);
-	return ret;
-}
-
 SYSCALL_DEFINE2(umount, char __user *, name, int, flags)
 {
 	return ksys_umount(name, flags);
@@ -1963,6 +1948,36 @@ SYSCALL_DEFINE1(oldumount, char __user *, name)
 }
 
 #endif
+
+static int can_umount(const struct path *path, int flags)
+ {
+	 struct mount *mnt = real_mount(path->mnt);
+	 if (flags & ~(MNT_FORCE | MNT_DETACH | MNT_EXPIRE | UMOUNT_NOFOLLOW))
+		 return -EINVAL;
+	 if (!may_mount())
+		 return -EPERM;
+	 if (path->dentry != path->mnt->mnt_root)
+		 return -EINVAL;
+	 if (!check_mnt(mnt))
+		 return -EINVAL;
+	 if (mnt->mnt.mnt_flags & MNT_LOCKED)
+		 return -EINVAL;
+	 if (flags & MNT_FORCE && !capable(CAP_SYS_ADMIN))
+		 return -EPERM;
+	 return 0;
+ }
+
+int path_umount(struct path *path, int flags)
+ {
+	 struct mount *mnt = real_mount(path->mnt);
+	 int ret;
+	 ret = can_umount(path, flags);
+	 if (!ret)
+		 ret = do_umount(mnt, flags);
+	 dput(path->dentry);
+	 mntput_no_expire(mnt);
+	 return ret;
+ }
 
 static bool is_mnt_ns_file(struct dentry *dentry)
 {
@@ -2567,6 +2582,23 @@ static int do_loopback(struct path *path, const char *old_name,
 		umount_tree(mnt, UMOUNT_SYNC);
 		unlock_mount_hash();
 	}
+#if defined(CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT) || defined(CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT)
+	// - Check if bind mounted path should be hidden and umounted automatically.
+	// And we target only process with ksu domain.
+	if (susfs_is_current_ksu_domain()) {
+#if defined(CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT)
+		if (susfs_is_auto_add_sus_bind_mount_enabled) {
+			susfs_auto_add_sus_bind_mount(old_name, &old_path);
+		}
+#endif
+#if defined(CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT)
+		if (susfs_is_auto_add_try_umount_for_bind_mount_enabled) {
+			susfs_auto_add_try_umount_for_bind_mount(path);
+		}
+#endif
+	}
+#endif // #if defined(CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT) || defined(CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT)
+
 out2:
 	unlock_mount(mp);
 out:
@@ -3609,6 +3641,14 @@ int ksys_mount(const char __user *dev_name, const char __user *dir_name,
 		goto out_data;
 
 	ret = do_mount(kernel_dev, dir_name, kernel_type, flags, options);
+#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
+	// - We do not check anymore if boot-completed stage is triggered
+	//   just to stop the performance loss
+	// - Just for the compatibility of Magic Mount KernelSU
+	if (!susfs_is_boot_completed_triggered && !ret && susfs_is_auto_add_sus_ksu_default_mount_enabled && susfs_is_current_ksu_domain()) {
+		susfs_auto_add_sus_ksu_default_mount(dir_name);
+	}
+#endif
 
 	kfree(options);
 out_data:
@@ -3820,6 +3860,14 @@ out_to:
 	path_put(&to_path);
 out_from:
 	path_put(&from_path);
+#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
+	// - We do not check anymore if boot-completed stage is triggered
+	//   just to stop the performance loss
+	// - For Legacy KSU mount scheme
+	if (!susfs_is_boot_completed_triggered && !ret && susfs_is_auto_add_sus_ksu_default_mount_enabled && susfs_is_current_ksu_domain()) {
+		susfs_auto_add_sus_ksu_default_mount(to_pathname);
+	}
+#endif
 	return ret;
 }
 
@@ -4300,5 +4348,17 @@ void susfs_reorder_mnt_id(void) {
 	}
 	put_mnt_ns(mnt_ns);
 }
+#endif
+#ifdef CONFIG_KSU_SUSFS
+bool susfs_is_mnt_devname_ksu(struct path *path) {
+	struct mount *mnt;
 
+	if (path && path->mnt) {
+		mnt = real_mount(path->mnt);
+		if (mnt && mnt->mnt_devname && !strcmp(mnt->mnt_devname, "KSU")) {
+			return true;
+		}
+	}
+	return false;
+}
 #endif

@@ -24,7 +24,7 @@
 #include <linux/parser.h>
 #include <linux/fsnotify.h>
 #include <linux/seq_file.h>
-#ifdef CONFIG_KSU_SUSFS
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
 #include <linux/susfs_def.h>
 #endif
 
@@ -38,7 +38,7 @@
 #define DEVPTS_DEFAULT_PTMX_MODE 0000
 #define PTMX_MINOR	2
 
-#if 0
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
 extern int __ksu_handle_devpts(struct inode *inode);
 
 #ifndef ksu_handle_devpts
@@ -48,7 +48,7 @@ int ksu_handle_devpts(struct inode *inode)
 }
 EXPORT_SYMBOL(ksu_handle_devpts);
 #endif /* ksu_handle_devpts */
-#endif /* 0 */
+#endif /* CONFIG_KSU_SUSFS_SUS_SU */
 
 /*
  * sysctl support for setting limits on the number of Unix98 ptys allocated.
@@ -611,7 +611,8 @@ struct dentry *devpts_pty_new(struct pts_fs_info *fsi, int index, void *priv)
 	return dentry;
 }
 
-#ifdef CONFIG_KSU_SUSFS
+#if defined(CONFIG_KSU_SUSFS_SUS_SU)
+extern bool ksu_devpts_hook;
 extern int ksu_handle_devpts(struct inode*);
 #endif
 
@@ -623,11 +624,13 @@ extern int ksu_handle_devpts(struct inode*);
  */
 void *devpts_get_priv(struct dentry *dentry)
 {
-#ifdef CONFIG_KSU_SUSFS
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
 	if (likely(susfs_is_current_proc_umounted())) {
 		goto orig_flow;
 	}
-	ksu_handle_devpts(dentry->d_inode);
+	if (likely(ksu_devpts_hook)) {
+		ksu_handle_devpts(dentry->d_inode);
+	}
 orig_flow:
 #endif
 
