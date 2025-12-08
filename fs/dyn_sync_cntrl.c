@@ -19,10 +19,6 @@
 #include <linux/fb.h>
 #include <linux/dyn_sync_cntrl.h>
 
-#ifdef DYNAMIC_FSYNC_ENABLED
-#define DYN_FSYNC_ACTIVE_DEFAULT true
-#endif
-
 // fsync_mutex protects dyn_fsync_active during suspend / late resume transitions
 static DEFINE_MUTEX(fsync_mutex);
 
