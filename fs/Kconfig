@@ -334,4 +334,11 @@ config DYNAMIC_FSYNC
 
 	  If unsure, say N.
 
+config DYNAMIC_FSYNC_ENABLED
+	bool "enable dynamic file sync control by default"
+	default y
+	help
+	  Enable Dynamic Fsync by default
+	  If unsure, say N.
+
 endmenu
