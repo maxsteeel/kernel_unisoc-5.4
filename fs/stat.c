@@ -23,6 +23,12 @@
 
 #include <linux/uaccess.h>
 #include <asm/unistd.h>
+#ifdef CONFIG_HYMOFS
+#include <linux/dcache.h>
+#include <linux/time.h>
+ 
+extern bool hymofs_should_spoof_mtime(const char *pathname);
+#endif
 
 #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
 extern void susfs_sus_ino_for_generic_fillattr(unsigned long ino, struct kstat *stat);

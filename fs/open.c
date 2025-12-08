@@ -36,6 +36,376 @@
 #include <linux/susfs_def.h>
 #endif
 
+#ifdef CONFIG_HYMOFS
+#include <linux/proc_fs.h>
+#include <linux/dcache.h>
+#include <linux/path.h>
+#include <linux/seq_file.h>
+#include <linux/hashtable.h>
+#include <linux/dirent.h>
+#include <linux/version.h>
+/* HymoFS God Mode - Advanced Path Manipulation */
+#define HYMO_HASH_BITS 10
+
+struct hymo_entry {
+    char *src;
+    char *target;
+    unsigned char type;
+    struct hlist_node node;
+};
+
+struct hymo_hide_entry {
+    char *path;
+    struct hlist_node node;
+};
+
+struct hymo_inject_entry {
+    char *dir;
+    struct hlist_node node;
+};
+
+static DEFINE_HASHTABLE(hymo_paths, HYMO_HASH_BITS);
+static DEFINE_HASHTABLE(hymo_hide_paths, HYMO_HASH_BITS);
+static DEFINE_HASHTABLE(hymo_inject_dirs, HYMO_HASH_BITS);
+static DEFINE_SPINLOCK(hymo_lock);
+static atomic_t hymo_version = ATOMIC_INIT(0);
+
+static void hymo_cleanup(void) {
+    struct hymo_entry *entry;
+    struct hymo_hide_entry *hide_entry;
+    struct hymo_inject_entry *inject_entry;
+    struct hlist_node *tmp;
+    int bkt;
+    hash_for_each_safe(hymo_paths, bkt, tmp, entry, node) {
+        hash_del(&entry->node);
+        kfree(entry->src);
+        kfree(entry->target);
+        kfree(entry);
+    }
+    hash_for_each_safe(hymo_hide_paths, bkt, tmp, hide_entry, node) {
+        hash_del(&hide_entry->node);
+        kfree(hide_entry->path);
+        kfree(hide_entry);
+    }
+    hash_for_each_safe(hymo_inject_dirs, bkt, tmp, inject_entry, node) {
+        hash_del(&inject_entry->node);
+        kfree(inject_entry->dir);
+        kfree(inject_entry);
+    }
+}
+
+/* Control interface: 
+   echo "add /src /target" > /proc/hymo_ctl
+   echo "hide /path/to/hide" > /proc/hymo_ctl
+   echo "clear" > /proc/hymo_ctl
+*/
+static ssize_t hymo_ctl_write(struct file *file, const char __user *buffer,
+                  size_t count, loff_t *pos)
+{
+    char *cmd, *p, *op, *arg1, *arg2;
+    unsigned long flags;
+    struct hymo_entry *entry;
+    struct hymo_hide_entry *hide_entry;
+    struct hymo_inject_entry *inject_entry;
+    u32 hash;
+    bool found;
+
+    if (count > 8192) return -EINVAL;
+    cmd = kmalloc(count + 1, GFP_KERNEL);
+    if (!cmd) return -ENOMEM;
+    if (copy_from_user(cmd, buffer, count)) { kfree(cmd); return -EFAULT; }
+    cmd[count] = 0;
+
+    p = strim(cmd);
+    op = strsep(&p, " ");
+    if (!op) { kfree(cmd); return -EINVAL; }
+
+    spin_lock_irqsave(&hymo_lock, flags);
+
+    if (strcmp(op, "clear") == 0) {
+        hymo_cleanup();
+        atomic_inc(&hymo_version);
+    } else if (strcmp(op, "add") == 0) {
+        arg1 = strsep(&p, " ");
+        arg2 = strsep(&p, " ");
+        char *arg3 = p;
+        if (arg1 && arg2) {
+            arg2 = strim(arg2);
+            hash = full_name_hash(NULL, arg1, strlen(arg1));
+            found = false;
+            hash_for_each_possible(hymo_paths, entry, node, hash) {
+                if (strcmp(entry->src, arg1) == 0) {
+                    kfree(entry->target);
+                    entry->target = kstrdup(arg2, GFP_ATOMIC);
+                    if (arg3) {
+                        int type = 0;
+                        kstrtoint(strim(arg3), 10, &type);
+                        entry->type = (unsigned char)type;
+                    } else {
+                        entry->type = 0; // DT_UNKNOWN
+                    }
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                entry = kmalloc(sizeof(*entry), GFP_ATOMIC);
+                if (entry) {
+                    entry->src = kstrdup(arg1, GFP_ATOMIC);
+                    entry->target = kstrdup(arg2, GFP_ATOMIC);
+                    if (arg3) {
+                        int type = 0;
+                        kstrtoint(strim(arg3), 10, &type);
+                        entry->type = (unsigned char)type;
+                    } else {
+                        entry->type = 0; // DT_UNKNOWN
+                    }
+                    if (entry->src && entry->target) hash_add(hymo_paths, &entry->node, hash);
+                    else { kfree(entry->src); kfree(entry->target); kfree(entry); }
+                }
+            }
+            atomic_inc(&hymo_version);
+        }
+    } else if (strcmp(op, "hide") == 0) {
+        arg1 = p;
+        if (arg1) {
+            arg1 = strim(arg1);
+            hash = full_name_hash(NULL, arg1, strlen(arg1));
+            found = false;
+            hash_for_each_possible(hymo_hide_paths, hide_entry, node, hash) {
+                if (strcmp(hide_entry->path, arg1) == 0) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                hide_entry = kmalloc(sizeof(*hide_entry), GFP_ATOMIC);
+                if (hide_entry) {
+                    hide_entry->path = kstrdup(arg1, GFP_ATOMIC);
+                    if (hide_entry->path) hash_add(hymo_hide_paths, &hide_entry->node, hash);
+                    else kfree(hide_entry);
+                }
+            }
+            atomic_inc(&hymo_version);
+        }
+    } else if (strcmp(op, "inject") == 0) {
+        arg1 = p;
+        if (arg1) {
+            arg1 = strim(arg1);
+            hash = full_name_hash(NULL, arg1, strlen(arg1));
+            found = false;
+            hash_for_each_possible(hymo_inject_dirs, inject_entry, node, hash) {
+                if (strcmp(inject_entry->dir, arg1) == 0) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                inject_entry = kmalloc(sizeof(*inject_entry), GFP_ATOMIC);
+                if (inject_entry) {
+                    inject_entry->dir = kstrdup(arg1, GFP_ATOMIC);
+                    if (inject_entry->dir) hash_add(hymo_inject_dirs, &inject_entry->node, hash);
+                    else kfree(inject_entry);
+                }
+            }
+            atomic_inc(&hymo_version);
+        }
+    }
+
+    spin_unlock_irqrestore(&hymo_lock, flags);
+    kfree(cmd);
+    return count;
+}
+
+static int hymo_ctl_show(struct seq_file *m, void *v)
+{
+    struct hymo_entry *entry;
+    struct hymo_hide_entry *hide_entry;
+    int bkt;
+    unsigned long flags;
+
+    seq_printf(m, "HymoFS Version: %d\n", atomic_read(&hymo_version));
+    
+    spin_lock_irqsave(&hymo_lock, flags);
+    hash_for_each(hymo_paths, bkt, entry, node) {
+        seq_printf(m, "add %s -> %s\n", entry->src, entry->target);
+    }
+    hash_for_each(hymo_hide_paths, bkt, hide_entry, node) {
+        seq_printf(m, "hide %s\n", hide_entry->path);
+    }
+    spin_unlock_irqrestore(&hymo_lock, flags);
+    return 0;
+}
+
+static int hymo_ctl_open(struct inode *inode, struct file *file)
+{
+    return single_open(file, hymo_ctl_show, NULL);
+}
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0)
+static const struct file_operations hymo_ctl_ops = {
+	.owner    = THIS_MODULE,
+	.open     = hymo_ctl_open,
+	.read     = seq_read,
+	.llseek   = seq_lseek,
+	.release  = single_release,
+	.write    = hymo_ctl_write,
+};
+#else
+static const struct proc_ops hymo_ctl_ops = {
+    .proc_open    = hymo_ctl_open,
+    .proc_read    = seq_read,
+    .proc_lseek   = seq_lseek,
+    .proc_release = single_release,
+    .proc_write   = hymo_ctl_write,
+};
+#endif
+
+static int __init hymofs_init(void)
+{
+    spin_lock_init(&hymo_lock);
+    hash_init(hymo_paths);
+    hash_init(hymo_hide_paths);
+    hash_init(hymo_inject_dirs);
+    proc_create("hymo_ctl", 0660, NULL, &hymo_ctl_ops);
+    pr_info("HymoFS: initialized (God Mode v3)\n");
+    return 0;
+}
+fs_initcall(hymofs_init);
+
+/* Returns kstrdup'd target if found, NULL otherwise. Caller must kfree. */
+char *hymofs_resolve_target(const char *pathname)
+{
+    unsigned long flags;
+    struct hymo_entry *entry;
+    u32 hash;
+    char *target = NULL;
+
+    if (atomic_read(&hymo_version) == 0) return NULL;
+    if (!pathname) return NULL;
+
+    hash = full_name_hash(NULL, pathname, strlen(pathname));
+
+    spin_lock_irqsave(&hymo_lock, flags);
+    hash_for_each_possible(hymo_paths, entry, node, hash) {
+        if (strcmp(entry->src, pathname) == 0) {
+            target = kstrdup(entry->target, GFP_ATOMIC);
+            break;
+        }
+    }
+    spin_unlock_irqrestore(&hymo_lock, flags);
+    return target;
+}
+EXPORT_SYMBOL(hymofs_resolve_target);
+
+bool hymofs_should_hide(const char *pathname)
+{
+    unsigned long flags;
+    struct hymo_hide_entry *entry;
+    u32 hash;
+    bool found = false;
+
+    if (atomic_read(&hymo_version) == 0) return false;
+    if (!pathname) return false;
+
+    hash = full_name_hash(NULL, pathname, strlen(pathname));
+
+    spin_lock_irqsave(&hymo_lock, flags);
+    hash_for_each_possible(hymo_hide_paths, entry, node, hash) {
+        if (strcmp(entry->path, pathname) == 0) {
+            found = true;
+            break;
+        }
+    }
+    spin_unlock_irqrestore(&hymo_lock, flags);
+    return found;
+}
+EXPORT_SYMBOL(hymofs_should_hide);
+
+bool hymofs_should_spoof_mtime(const char *pathname)
+{
+    unsigned long flags;
+    struct hymo_inject_entry *entry;
+    u32 hash;
+    bool found = false;
+
+    if (atomic_read(&hymo_version) == 0) return false;
+    if (!pathname) return false;
+
+    hash = full_name_hash(NULL, pathname, strlen(pathname));
+
+    spin_lock_irqsave(&hymo_lock, flags);
+    hash_for_each_possible(hymo_inject_dirs, entry, node, hash) {
+        if (strcmp(entry->dir, pathname) == 0) {
+            found = true;
+            break;
+        }
+    }
+    spin_unlock_irqrestore(&hymo_lock, flags);
+    return found;
+}
+EXPORT_SYMBOL(hymofs_should_spoof_mtime);
+
+struct hymo_name_list {
+    char *name;
+    unsigned char type;
+    struct list_head list;
+};
+
+int hymofs_populate_injected_list(const char *dir_path, struct list_head *head)
+{
+    unsigned long flags;
+    struct hymo_entry *entry;
+    struct hymo_inject_entry *inject_entry;
+    struct hymo_name_list *item;
+    u32 hash;
+    int bkt;
+    bool should_inject = false;
+    size_t dir_len;
+
+    if (atomic_read(&hymo_version) == 0) return 0;
+    if (!dir_path) return 0;
+
+    dir_len = strlen(dir_path);
+    hash = full_name_hash(NULL, dir_path, dir_len);
+
+    spin_lock_irqsave(&hymo_lock, flags);
+    
+    hash_for_each_possible(hymo_inject_dirs, inject_entry, node, hash) {
+        if (strcmp(inject_entry->dir, dir_path) == 0) {
+            should_inject = true;
+            break;
+        }
+    }
+
+    if (should_inject) {
+        hash_for_each(hymo_paths, bkt, entry, node) {
+            if (strncmp(entry->src, dir_path, dir_len) == 0) {
+                char *name = NULL;
+                if (dir_len == 1 && dir_path[0] == '/') {
+                    name = entry->src + 1;
+                } else if (entry->src[dir_len] == '/') {
+                    name = entry->src + dir_len + 1;
+                }
+
+                if (name && *name && strchr(name, '/') == NULL) {
+                    item = kmalloc(sizeof(*item), GFP_ATOMIC);
+                    if (item) {
+                        item->name = kstrdup(name, GFP_ATOMIC);
+                        item->type = entry->type;
+                        if (item->name) list_add(&item->list, head);
+                        else kfree(item);
+                    }
+                }
+            }
+        }
+    }
+
+    spin_unlock_irqrestore(&hymo_lock, flags);
+    return 0;
+}
+EXPORT_SYMBOL(hymofs_populate_injected_list);
+#endif /* CONFIG_HYMOFS */
+
 #include "internal.h"
 
 int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,

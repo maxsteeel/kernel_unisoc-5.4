@@ -53,6 +53,11 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/namei.h>
 
+#ifdef CONFIG_HYMOFS
+extern char *hymofs_resolve_target(const char *pathname);
+extern bool hymofs_should_hide(const char *pathname);
+#endif
+
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 extern bool susfs_is_sus_android_data_d_name_found(const char *d_name);
 extern bool susfs_is_sus_sdcard_d_name_found(const char *d_name);
@@ -143,8 +148,39 @@ extern const struct qstr susfs_fake_qstr_name;
 
 #define EMBEDDED_NAME_MAX	(PATH_MAX - offsetof(struct filename, iname))
 
+#ifdef CONFIG_HYMOFS
+struct filename *__original_getname_flags(const char __user *filename, int flags, int *empty);
+
+struct filename *getname_flags(const char __user *filename, int flags, int *empty)
+{
+    struct filename *result = __original_getname_flags(filename, flags, empty);
+    char *target;
+
+    if (IS_ERR(result)) return result;
+
+    /* HymoFS God Mode Hook */
+    if (hymofs_should_hide(result->name)) {
+        putname(result);
+        /* Return ENOENT directly */
+        return ERR_PTR(-ENOENT);
+    } else {
+        target = hymofs_resolve_target(result->name);
+        if (target) {
+            putname(result);
+            result = getname_kernel(target);
+            kfree(target);
+        }
+    }
+    return result;
+}
+#endif
+
 struct filename *
+#ifdef CONFIG_HYMOFS
+__original_getname_flags(const char __user *filename, int flags, int *empty)
+#else
 getname_flags(const char __user *filename, int flags, int *empty)
+#endif
 {
 	struct filename *result;
 	char *kname;
