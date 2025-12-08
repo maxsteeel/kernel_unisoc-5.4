@@ -4212,6 +4212,15 @@ reset_checkpoint:
 			  sbi->valid_super_block ? 1 : 2, err);
 	}
 
+	/* update extension list */
+	f2fs_update_extension_list(sbi, "db", true, true);
+ 	f2fs_update_extension_list(sbi, "db-shm", true, true);
+ 	f2fs_update_extension_list(sbi, "db-wal", true, true);
+ 	f2fs_update_extension_list(sbi, "sqlite", true, true);
+ 	f2fs_update_extension_list(sbi, "android", true, true);
+	f2fs_update_extension_list(sbi, "obb", true, true);
+	f2fs_update_extension_list(sbi, "pak", true, true);
+
 	f2fs_join_shrinker(sbi);
 
 	f2fs_tuning_parameters(sbi);
