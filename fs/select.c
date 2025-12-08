@@ -47,7 +47,7 @@
  * better solutions..
  */
 
-#define MAX_SLACK	(100 * NSEC_PER_MSEC)
+#define MAX_SLACK	(1 * NSEC_PER_MSEC)
 
 static long __estimate_accuracy(struct timespec64 *tv)
 {
@@ -69,7 +69,7 @@ static long __estimate_accuracy(struct timespec64 *tv)
 	if (slack > MAX_SLACK)
 		return MAX_SLACK;
 
-	return slack;
+	return MAX_SLACK;
 }
 
 u64 select_estimate_accuracy(struct timespec64 *tv)
@@ -87,8 +87,8 @@ u64 select_estimate_accuracy(struct timespec64 *tv)
 	ktime_get_ts64(&now);
 	now = timespec64_sub(*tv, now);
 	ret = __estimate_accuracy(&now);
-	if (ret < current->timer_slack_ns)
-		return current->timer_slack_ns;
+//	if (ret < current->timer_slack_ns)
+//		return current->timer_slack_ns;
 	return ret;
 }
 

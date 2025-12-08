@@ -3149,8 +3149,6 @@ static bool __initdata __sched_schedstats = false;
 static void set_schedstats(bool enabled)
 {
 	if (enabled)
-		static_branch_enable(&sched_schedstats);
-	else
 		static_branch_disable(&sched_schedstats);
 }
 
@@ -3158,7 +3156,7 @@ void force_schedstat_enabled(void)
 {
 	if (!schedstat_enabled()) {
 		pr_info("kernel profiling enabled schedstats, disable via kernel.sched_schedstats.\n");
-		static_branch_enable(&sched_schedstats);
+		static_branch_disable(&sched_schedstats);
 	}
 }
 
@@ -3174,9 +3172,6 @@ static int __init setup_schedstats(char *str)
 	 * variable so init_schedstats() can do it later.
 	 */
 	if (!strcmp(str, "enable")) {
-		__sched_schedstats = true;
-		ret = 1;
-	} else if (!strcmp(str, "disable")) {
 		__sched_schedstats = false;
 		ret = 1;
 	}

@@ -323,4 +323,15 @@ source "fs/nls/Kconfig"
 source "fs/dlm/Kconfig"
 source "fs/unicode/Kconfig"
 
+config DYNAMIC_FSYNC
+	bool "dynamic file sync control"
+	default y
+	help
+	  An experimental file sync control using new power_suspend driver
+	  interface to dynamically switch fsync mode based on power source.
+	  This is useful for mobile devices to improve performance on battery
+	  power without sacrificing data integrity on AC power.
+
+	  If unsure, say N.
+
 endmenu

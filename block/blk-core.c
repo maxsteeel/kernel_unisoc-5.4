@@ -1266,7 +1266,7 @@ blk_status_t blk_insert_cloned_request(struct request_queue *q, struct request *
 		return BLK_STS_IOERR;
 
 	if (blk_queue_io_stat(q))
-		blk_account_io_start(rq, true);
+		blk_account_io_start(rq, false);
 
 	/*
 	 * Since we have a scheduler attached on the top device,
