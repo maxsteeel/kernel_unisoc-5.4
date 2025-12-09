@@ -210,6 +210,42 @@ static ssize_t hymo_ctl_write(struct file *file, const char __user *buffer,
             }
             atomic_inc(&hymo_version);
         }
+    } else if (strcmp(op, "delete") == 0) {
+        arg1 = p;
+        if (arg1) {
+            arg1 = strim(arg1);
+            hash = full_name_hash(NULL, arg1, strlen(arg1));
+            
+            hash_for_each_possible(hymo_paths, entry, node, hash) {
+                if (strcmp(entry->src, arg1) == 0) {
+                    hash_del(&entry->node);
+                    kfree(entry->src);
+                    kfree(entry->target);
+                    kfree(entry);
+                    goto out_delete;
+                }
+            }
+            
+            hash_for_each_possible(hymo_hide_paths, hide_entry, node, hash) {
+                if (strcmp(hide_entry->path, arg1) == 0) {
+                    hash_del(&hide_entry->node);
+                    kfree(hide_entry->path);
+                    kfree(hide_entry);
+                    goto out_delete;
+                }
+            }
+
+            hash_for_each_possible(hymo_inject_dirs, inject_entry, node, hash) {
+                if (strcmp(inject_entry->dir, arg1) == 0) {
+                    hash_del(&inject_entry->node);
+                    kfree(inject_entry->dir);
+                    kfree(inject_entry);
+                    goto out_delete;
+                }
+            }
+out_delete:
+            atomic_inc(&hymo_version);
+        }
     }
 
     spin_unlock_irqrestore(&hymo_lock, flags);
@@ -224,7 +260,8 @@ static int hymo_ctl_show(struct seq_file *m, void *v)
     int bkt;
     unsigned long flags;
 
-    seq_printf(m, "HymoFS Version: %d\n", atomic_read(&hymo_version));
+    seq_printf(m, "HymoFS Protocol: 3\n");
+    seq_printf(m, "HymoFS Config Version: %d\n", atomic_read(&hymo_version));
     
     spin_lock_irqsave(&hymo_lock, flags);
     hash_for_each(hymo_paths, bkt, entry, node) {
