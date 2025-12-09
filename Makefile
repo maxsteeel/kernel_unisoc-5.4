@@ -489,9 +489,11 @@ KBUILD_CFLAGS   := -Wall -Werror -Wundef -Werror=strict-prototypes -Wno-trigraph
            -Werror=implicit-function-declaration -Werror=implicit-int \
            -Werror=return-type -Wno-format-security \
            -std=gnu89 \
-           -march=armv8.2-a -mtune=cortex-a75 -pipe -fdiagnostics-color=always \
+           -march=armv8.2-a+crypto+crc+lse -mtune=cortex-a75 -pipe -fdiagnostics-color=always \
            -Wno-unused-function -Wno-unused-variable -Wno-misleading-indentation \
-           -Wno-pointer-sign -Wno-frame-address
+           -Wno-pointer-sign -Wno-frame-address \
+           -fno-semantic-interposition -fmerge-all-constants -fno-math-errno \
+		   -fomit-frame-pointer -fno-stack-protector -falign-functions=32 -funroll-loops
 KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
