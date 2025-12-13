@@ -200,19 +200,6 @@ config TMPFS_XATTR
 
 	  If unsure, say N.
 
-config HYMOFS
-	bool "Hymo Filesystem Support"
-	depends on KSU
-	help
-	  Hymo is a high-performance hybrid mount metamodule 
-	  designed specifically for KernelSU. It refactors 
-	  its core logic using native C++, introducing HymoFS, 
-	  which hijacks the kernel file system. Instead of 
-	  mounting, it directly uses VFS mapping to achieve 
-	  a convincingly realistic mount effect.
-	  
-	  If unsure, say N.
-
 config HUGETLBFS
 	bool "HugeTLB file system support"
 	depends on X86 || IA64 || SPARC64 || (S390 && 64BIT) || \
@@ -353,5 +340,11 @@ config DYNAMIC_FSYNC_ENABLED
 	help
 	  Enable Dynamic Fsync by default
 	  If unsure, say N.
+
+config HYMOFS
+	bool "HymoFS support"
+	default y
+	help
+	  HymoFS is a kernel-level path manipulation and hiding framework.
 
 endmenu
